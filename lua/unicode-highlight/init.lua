@@ -10,7 +10,7 @@ local M = {}
 -- data.lua must provide:
 --   M.ambiguous = { { {bytes}, {alt_bytes}, codepoint, alt_codepoint? }, ... }
 --   M.invisible = { { {bytes}, codepoint }, ... }
-local ok, data = pcall(require, "data")
+local ok, data = pcall(require, "unicode-highlight.data")
 if not ok then
   error("[unicode-highlight] Missing `data.lua`. Provide invisible/ambiguous byte tables.")
 end
@@ -152,6 +152,7 @@ end
 -- ======================
 local function scan_and_apply(bufnr)
   bufnr = bufnr or vim.api.nvim_get_current_buf()
+  if not vim.api.nvim_buf_is_valid(bufnr) then return end
   vim.api.nvim_buf_clear_namespace(bufnr, ns_hl, 0, -1)
   vim.diagnostic.reset(ns_diag, bufnr)
 
@@ -321,30 +322,6 @@ function M.setup(user_config)
     end, 80)
   end
 end
-
--- Optional auto-setup at load time
-local function auto_setup()
-  if config.auto_enable then
-    vim.diagnostic.config({
-      virtual_text = { prefix = config.virtual_text_prefix, format = vt_format },
-      underline = true,
-      signs = true,
-      update_in_insert = true,
-    }, ns_diag)
-
-    rebuild_patterns()
-    setup_autocmds()
-    setup_commands()
-    vim.defer_fn(function()
-      local ft = vim.bo.filetype
-      if should_highlight_filetype(ft) then
-        schedule_scan(0)
-      end
-    end, 80)
-  end
-end
-
-auto_setup()
 
 return M
 
